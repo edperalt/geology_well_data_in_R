@@ -51,7 +51,7 @@ The library indicates in the documentation a few options, I normally choose:
 
 ```{r echo=TRUE, message=FALSE, warning=FALSE}
 
-pathname <- "../../data/GEOLINK_Lithology and wells NORTH SEA/"
+pathname <- "../../../data/GEOLINK_Lithology and wells NORTH SEA/"
 
 lasfiles <- list.files(pathname)
 lasfiles <- lasfiles[grepl(".las", lasfiles)]

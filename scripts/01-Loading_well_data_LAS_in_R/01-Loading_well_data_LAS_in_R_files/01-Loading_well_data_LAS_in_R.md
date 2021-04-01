@@ -1,3 +1,10 @@
+---
+title: "loading well data"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
 
 
 ## LAS files
@@ -40,7 +47,7 @@ The library indicates in the documentation a few options, I normally choose:
 
 
 ```r
-pathname <- "../../data/GEOLINK_Lithology and wells NORTH SEA/"
+pathname <- "../../../data/GEOLINK_Lithology and wells NORTH SEA/"
 
 lasfiles <- list.files(pathname)
 lasfiles <- lasfiles[grepl(".las", lasfiles)]
