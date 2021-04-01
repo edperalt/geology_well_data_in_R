@@ -1,0 +1,162 @@
+---
+title: "loading well data"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## LAS files
+
+The LAS format is widely used in the Oil and Gas industry and is short from Log ASCII Standard, in this notebook we show a short workflow to load and qc multiple files. I´m using some files donated by [Geolink](https://www.geolink-s2.com/) to the geoscience community.
+
+<br>
+
+## The libraries
+
+I will use to libraries:
+
+-   the [tidyverse](https://www.tidyverse.org/) to perform data wrangling and plotting,
+
+-   [petroreadr](https://github.com/ravenroadresources/petroreadr) from **Ravenroadresources** to load the **LAS** files.
+
+-   [skimr](https://docs.ropensci.org/skimr/), to get an exccelent summary of the data. 
+
+<br>
+
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+library(tidyverse)
+library(petroreadr)
+library(skimr)
+
+
+```
+
+<br>
+
+## Loading the files
+
+The library indicates in the documentation a few options, I normally choose:
+
+-   load directly to a dataframe, which is my go to mode.\
+-   set the verbose option to `TRUE`, this is particularly useful when working with large amount of wells/logs, to have the peace of mind that the machine is working and has not hanged.
+
+
+<br>
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+pathname <- "../../data/GEOLINK_Lithology and wells NORTH SEA/"
+
+lasfiles <- list.files(pathname)
+lasfiles <- lasfiles[grepl(".las", lasfiles)]
+ 
+df<-read_las(file.path(pathname, lasfiles), verbose = TRUE)$data
+
+  
+  
+```
+
+<br>
+
+## the loaded data
+
+We have obtained a dataframe with all logs, and a column with the well name that makes our life easier for plotting, filtering, etc.
+
+
+<br>
+
+```{r}
+skim(df)
+```
+
+<br>
+
+## Quick view of a log
+
+to check whether a well log is present in all wells, and compare some of their stats, the box plot is a powerful tool.
+
+<br>
+
+```{r}
+
+box_1 <-
+  df %>%
+  ggplot(aes(WELL, GR)) +
+  geom_boxplot() +
+  theme_bw()+
+  theme(axis.text.x=element_text(angle=90,hjust=1)
+        )
+
+
+box_1
+
+```
+
+<br>
+
+A quick view shows some negative values in well *34/10-12* and some potential outliers in well *35/9-2*, we can repeat the plot cropping on a range to have a better view.
+
+<br>
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+box_1 + ylim(0, 200)
+  
+```
+
+<br>
+
+We can repeat the same for all logs at once to get a quick idea , however there are at least two points to consider when doing this:
+
+-   the size of the plot will need to be increased to properly show all logs,
+
+-   if you want to visualize a zoom of a particular log, you will need to apply a filter to the data before appliying the pivot.
+
+-   similarly, when dealing with logs that behave logarithmicaly, I dont´t know how to set a logarithmic scale to a particular log using faceting, therefore I apply a log transform before the pivoting step.
+
+<br>
+
+```{r fig.height=60, fig.width=8, message=FALSE, warning=FALSE}
+
+df %>% 
+  mutate(log10_RDEP= log10(RDEP)) %>% 
+  select(-RDEP) %>% 
+  filter( GR >   0 ,
+         GR  < 200 )  %>% 
+  pivot_longer(!c("WELL"), names_to = "logs", values_to = "value") %>% 
+  drop_na(value) %>%
+  ggplot()+
+  geom_boxplot(aes(WELL, value))+
+  facet_wrap(~logs, scales = "free", ncol = 1) +
+  theme_bw()+
+  theme(axis.text.x=element_text(angle=90,hjust=1))
+
+
+```
+
+<br>
+
+## Density neutron plot
+
+Just a quick plot set creating a color scale between 0 and 100, the values below 0 are filtered from the plot, but values above 100 are colored as 100.
+
+<br>
+
+```{r message=FALSE, warning=FALSE}
+df %>% 
+  filter(GR>0) %>% 
+  ggplot(aes(RHOB,NPHI, color = GR))+
+  geom_point( size = 1)+
+  facet_wrap(~WELL, ncol = 2)+
+  xlim(1,max(df$RHOB))+
+  theme_bw()+
+  scale_color_gradient(low = "yellow", high = "brown",limits = c(0,100), 
+                       oob = scales::squish
+                       )
+```
